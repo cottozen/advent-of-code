@@ -53,16 +53,19 @@ def move_blocks_part_two(blocks: list[str]):
             block_len += 1
             i -= 1
             continue
-        for chunk_start, chunck_end in space_heap:
-            if chunck_end - chunk_start < block_len:
+        for heap_index, (chunk_start, chunck_end) in enumerate(space_heap):
+            chunk_len = chunck_end - chunk_start
+            if chunk_len < block_len:
                 continue
             if chunk_start > i:
                 break
             blocks[i + 1 : i + block_len + 1] = ["."] * block_len
             blocks[chunk_start : chunk_start + block_len] = [block] * block_len
+            if (chunk_len - block_len) > 0:
+                space_heap[heap_index] = (chunk_start + block_len, chunck_end)
+            else:
+                space_heap.pop(heap_index)
             break
-        # Could make this more efficent by deciding where the heap needs to be updated
-        space_heap = create_space_heap(blocks[: i + 1])
         block, block_len = None, 0
     return blocks
 
