@@ -84,9 +84,9 @@ class Program:
     def fix_program(self, bit_len: int):
         backtrack = DefaultDict(set)
         a = 2**bit_len
+        bit_masks = [0b001, 0b010, 0b011, 0b100, 0b101, 0b110, 0b111]
         instruction_index = len(self.instructions)
         while self.instructions != self.outputs:
-            bit_masks = [0b001, 0b010, 0b011, 0b100, 0b101, 0b110, 0b111]
             pos_shift = (len(self.instructions) - instruction_index) * 3
 
             def is_correct_output():
@@ -98,9 +98,9 @@ class Program:
 
             for mask in bit_masks:
                 self.reset()
-                if mask in backtrack[pos_shift]:
+                if mask in backtrack[instruction_index]:
                     continue
-                backtrack[pos_shift].add(mask)
+                backtrack[instruction_index].add(mask)
                 new_a = replace_bits(a, pos_shift, mask, bit_len + 1)
                 self.registers["A"] = new_a
                 self.execute()
@@ -109,16 +109,16 @@ class Program:
                     a = new_a
                     break
             else:
-                if pos_shift == 0:
-                    print("A: ", bin(a))
-                    print("outputs: ", self.outputs)
-                    print("attemps: ", backtrack)
-                    raise Exception("Cannot backtrack from here")
+                if instruction_index == len(self.instructions) and len(
+                    backtrack[instruction_index]
+                ) == len(bit_masks):
+                    print("The fuck")
+                    break
                 # backtrack
                 print(
                     f"backtracking from pos_shift={pos_shift} and instruction_index={instruction_index}"
                 )
-                backtrack[pos_shift] = set()
+                backtrack[instruction_index] = set()
                 instruction_index += 1
         return a, self.outputs
 
@@ -189,9 +189,6 @@ Program: 0,3,5,4,3,0"""
 def main():
     with open("input.txt") as file:
         program = parse_program(file.read().strip())
-        # bit_len = 45
-        # outputs = program.fix_program(bit_len)
-
         num_bits = 0
         outputs = program.execute()
         while len(outputs) != len(program.instructions):
@@ -199,22 +196,21 @@ def main():
             program.reset()
             program.registers["A"] = 2**num_bits
             outputs = program.execute()
+        outputs = program.fix_program(num_bits)
+        # print(outputs)
 
-        min_a = 2**num_bits
-        print(num_bits)
-        print(bin(min_a))
-
-        a = min_a
-        while outputs != program.instructions:
-            a += 1
-            program.reset()
-            program.registers["A"] = a
-            outputs = program.execute()
-            print(outputs)
-        print("A: ", a)
+        # a = 2**num_bits
+        # while outputs != program.instructions:
+        #     a += 8
+        #     program.reset()
+        #     program.registers["A"] = a
+        #     outputs = program.execute()
+        #     print(a, "=>", outputs)
+        #     time.sleep(0.5)
+        # print("A: ", a)
 
 
 if __name__ == "__main__":
 
-    # test()
-    main()
+    test()
+    # main()
