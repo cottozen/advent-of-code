@@ -1,4 +1,4 @@
-from typing import Callable, DefaultDict, TypedDict
+from typing import Callable, TypedDict
 
 
 class Registers(TypedDict):
@@ -7,11 +7,10 @@ class Registers(TypedDict):
     C: int
 
 
-def replace_bits(num: int, pos: int, mask: int, num_bits: int):
-    pos_shift = num_bits - min((pos + 3), 17)
-    filled_mask = ((1 << num_bits) - 1) & ~(
-        0b111 << pos_shift
-    )  # Ensure 17-bit mask and cleat the first 3 bits
+def replace_bits(num: int, pos: int, mask: int):
+    num_bits = num.bit_length()
+    pos_shift = num_bits - pos - 3
+    filled_mask = ((1 << num_bits) - 1) & ~(0b111 << pos_shift)
     return (num & filled_mask) | (mask << pos_shift)
 
 
@@ -82,49 +81,33 @@ class Program:
                 return operand
 
     def fix_program(self, bit_len: int):
-        backtrack = DefaultDict(set)
-        a = 2**bit_len
+        a_init: int = 2**bit_len
         bit_masks = [0b001, 0b010, 0b011, 0b100, 0b101, 0b110, 0b111]
-        instruction_index = len(self.instructions)
-        while self.instructions != self.outputs:
-            pos_shift = (len(self.instructions) - instruction_index) * 3
+        valid_bit_masks: list[int] = []
 
-            def is_correct_output():
-                return (
-                    len(self.outputs)
-                    and self.outputs[instruction_index::]
-                    == self.instructions[instruction_index::]
-                )
-
+        def dfs(a: int, pos: int):
+            if self.execute(a) == self.instructions:
+                valid_bit_masks.append(a)
+                return
+            if a.bit_length() - pos < 3:
+                return
+            valid = []
+            num_elemets = pos // 3 + 1
             for mask in bit_masks:
-                self.reset()
-                if mask in backtrack[instruction_index]:
-                    continue
-                backtrack[instruction_index].add(mask)
-                new_a = replace_bits(a, pos_shift, mask, bit_len + 1)
-                self.registers["A"] = new_a
-                self.execute()
-                if is_correct_output():
-                    instruction_index -= 1
-                    a = new_a
-                    break
-            else:
-                if instruction_index == len(self.instructions) and len(
-                    backtrack[instruction_index]
-                ) == len(bit_masks):
-                    print("The fuck")
-                    break
-                # backtrack
-                print(
-                    f"backtracking from pos_shift={pos_shift} and instruction_index={instruction_index}"
-                )
-                backtrack[instruction_index] = set()
-                instruction_index += 1
-        return a, self.outputs
+                a_new = replace_bits(a, pos, mask)
+                outputs = self.execute(a_new)
+                if outputs[-num_elemets:] == self.instructions[-num_elemets:]:
+                    valid.append(a_new)
+            for a in valid:
+                dfs(a, pos + 3)
 
-    def execute(self) -> list[int]:
-        start_a = self.registers["A"]
-        if outputs := self._memo.get(start_a):
+        dfs(a_init, 0)
+        return valid_bit_masks
+
+    def execute(self, a_init: int) -> list[int]:
+        self.reset()
+        self.registers["A"] = a_init
+        if outputs := self._memo.get(a_init):
             self.outputs = outputs
             return self.outputs
 
@@ -149,12 +132,11 @@ class Program:
             operation(operand)
             if curr_a != self.registers["A"]:
                 curr_a = self.registers["A"]
-                # print(bin(curr_a))
             if self._jumped:
                 self._jumped = False
                 continue
             self.pointer += 2
-        self._memo[start_a] = self.outputs
+        self._memo[a_init] = self.outputs
         return self.outputs
 
 
@@ -169,48 +151,31 @@ def parse_program(program: str) -> Program:
     )
 
 
-def test():
-    # x = 2024
-    x = 2024
-    example = f"""Register A: {x}
-Register B: 0
-Register C: 0
+def solve(program: Program):
+    num_bits = 0
+    outputs = []
+    bit_range = []
+    while len(outputs) <= len(program.instructions):
+        num_bits += 1
+        outputs = program.execute(2**num_bits)
+        if len(outputs) == len(program.instructions):
+            bit_range.append(num_bits)
 
-Program: 0,3,5,4,3,0"""
+    valid_outputs = []
+    for num_bits in bit_range:
+        valid_outputs += program.fix_program(num_bits)
+    valid_outputs.sort()
+    print(bit_range)
+    print("ANSWER IS: ", min(valid_outputs))
 
-    program = parse_program(example)
-    print("INSTRUCTIONS: ", program.instructions)
-    print("TARGET: ", bin(117440))
-    bit_len = (len(program.instructions) * 3) - 2
-    print(program.fix_program(bit_len))
-    print("NUM TRIES:", len(program._memo))
+    solve(program)
 
 
 def main():
     with open("input.txt") as file:
         program = parse_program(file.read().strip())
-        num_bits = 0
-        outputs = program.execute()
-        while len(outputs) != len(program.instructions):
-            num_bits += 1
-            program.reset()
-            program.registers["A"] = 2**num_bits
-            outputs = program.execute()
-        outputs = program.fix_program(num_bits)
-        # print(outputs)
-
-        # a = 2**num_bits
-        # while outputs != program.instructions:
-        #     a += 8
-        #     program.reset()
-        #     program.registers["A"] = a
-        #     outputs = program.execute()
-        #     print(a, "=>", outputs)
-        #     time.sleep(0.5)
-        # print("A: ", a)
+        solve(program)
 
 
 if __name__ == "__main__":
-
-    test()
-    # main()
+    main()
