@@ -43,16 +43,45 @@ long long copySeq(long long seq, int d, int i) {
   }
   return clone;
 }
-
-int main(int argc, char *argv[]) {
+void part1(std::vector<Range> &ranges) {
   long long sum = 0;
-  auto ranges = getRanges();
   std::set<int> invalid;
   for (Range &r : ranges) {
     int dLower = digitCount(r.lower);
     int dUpper = digitCount(r.upper);
     for (int d = dLower; d <= dUpper; d++) {
-      // for part one set i = 2 and d = 2
+      if (d % 2 != 0) {
+        continue;
+      }
+      int i = d / 2;
+      long long maxSeq = copySeq(9, i, 1);
+
+      long long base = std::pow(10, d - 1);
+      long long divisor = std::pow(10, i);
+      long long seq = base / divisor;
+
+      long long clone = copySeq(seq, d, i);
+      while (base <= r.upper && seq <= maxSeq) {
+        if (invalid.count(clone) == 0 && r.lower <= clone && clone <= r.upper) {
+          sum += clone;
+          invalid.insert(clone);
+        }
+        base += divisor;
+        seq = base / divisor;
+        clone = copySeq(seq, d, i);
+      }
+    }
+  }
+  printf("part1 sum: %lld \n", sum);
+}
+
+void part2(std::vector<Range> &ranges) {
+  long long sum = 0;
+  std::set<int> invalid;
+  for (Range &r : ranges) {
+    int dLower = digitCount(r.lower);
+    int dUpper = digitCount(r.upper);
+    for (int d = dLower; d <= dUpper; d++) {
       for (int i = 1; i <= d / 2; i++) {
         long long maxSeq = copySeq(9, i, 1);
 
@@ -74,7 +103,13 @@ int main(int argc, char *argv[]) {
       }
     }
   }
-  printf("sum: %lld \n", sum);
+  printf("part2 sum: %lld \n", sum);
+}
 
+int main(int argc, char *argv[]) {
+  long long sum = 0;
+  auto ranges = getRanges();
+  part1(ranges);
+  part2(ranges);
   return 0;
 }
