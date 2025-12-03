@@ -45,7 +45,7 @@ long long copySeq(long long seq, int d, int i) {
 }
 void part1(std::vector<Range> &ranges) {
   long long sum = 0;
-  std::set<int> invalid;
+  std::set<long long> invalid;
   for (Range &r : ranges) {
     int dLower = digitCount(r.lower);
     int dUpper = digitCount(r.upper);
@@ -54,21 +54,15 @@ void part1(std::vector<Range> &ranges) {
         continue;
       }
       int i = d / 2;
+      long long baseSeq = std::pow(10, i - 1);
       long long maxSeq = copySeq(9, i, 1);
 
-      long long base = std::pow(10, d - 1);
-      long long divisor = std::pow(10, i);
-      long long seq = base / divisor;
-
-      long long clone = copySeq(seq, d, i);
-      while (base <= r.upper && seq <= maxSeq) {
+      for (long long seq = baseSeq; seq <= maxSeq; ++seq) {
+        long long clone = copySeq(seq, d, i);
         if (invalid.count(clone) == 0 && r.lower <= clone && clone <= r.upper) {
           sum += clone;
           invalid.insert(clone);
         }
-        base += divisor;
-        seq = base / divisor;
-        clone = copySeq(seq, d, i);
       }
     }
   }
@@ -77,28 +71,25 @@ void part1(std::vector<Range> &ranges) {
 
 void part2(std::vector<Range> &ranges) {
   long long sum = 0;
-  std::set<int> invalid;
+  std::set<long long> invalid;
   for (Range &r : ranges) {
     int dLower = digitCount(r.lower);
     int dUpper = digitCount(r.upper);
     for (int d = dLower; d <= dUpper; d++) {
       for (int i = 1; i <= d / 2; i++) {
+        if (d % i != 0) {
+          continue;
+        }
+        long long baseSeq = std::pow(10, i - 1);
         long long maxSeq = copySeq(9, i, 1);
 
-        long long base = std::pow(10, d - 1);
-        long long divisor = std::pow(10, d - i);
-        long long seq = base / divisor;
-
-        long long clone = copySeq(seq, d, i);
-        while (base <= r.upper && seq <= maxSeq) {
+        for (long long seq = baseSeq; seq <= maxSeq; ++seq) {
+          long long clone = copySeq(seq, d, i);
           if (invalid.count(clone) == 0 && r.lower <= clone &&
               clone <= r.upper) {
             sum += clone;
             invalid.insert(clone);
           }
-          base += divisor;
-          seq = base / divisor;
-          clone = copySeq(seq, d, i);
         }
       }
     }
