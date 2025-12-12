@@ -75,12 +75,12 @@ long solvePaths(const Graph &graph, std::deque<std::string> order,
     }
     order.pop_back();
     auto it = graph.find(curr);
-    if (it != graph.end()) {
-      auto &edges = it->second;
-      for (auto &e : edges) {
-        long paths = dp[e];
-        dp.at(e) = paths + dp[curr];
-      }
+    if (it == graph.end()) {
+      continue;
+    }
+    auto &edges = it->second;
+    for (auto &e : edges) {
+      dp[e] = dp[e] + dp[curr];
     }
   }
   return dp[end];
