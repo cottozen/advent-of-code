@@ -63,7 +63,7 @@ std::deque<std::string> topologicalSort(const Graph &graph,
   return order;
 }
 
-long solvePaths(const Graph &graph, std::deque<std::string> order,
+long solvePaths(const Graph &graph, std::deque<std::string> &order,
                 const std::string start, const std::string end) {
   std::unordered_map<std::string, long> dp;
   dp.insert({start, 1});
